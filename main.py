@@ -4,15 +4,18 @@ import threading
 import queue
 import time
 import random
+from datetime import datetime
 
 import requests
 import logging
 
 import check_proxy
+import friend_claim
 import game_claim
 
 import auth_requests
 import ClaimRewards
+import farming
 
 from enum import Enum
 
@@ -42,7 +45,7 @@ class WorkerThread(threading.Thread):
         threading.Thread.__init__(self)
         self.task_queue = task_queue
         self.api_client = api_client
-        self.task_type = 'game'
+        self.task_type = 'all'
 
     def run(self):
         while True:
@@ -65,7 +68,7 @@ class WorkerThread(threading.Thread):
                 "http": f'http://{proxy_data}',
                 "https": f'http://{proxy_data}'
             }
-            proxy_status = check_proxy.check(proxy,exp_ip)
+            proxy_status = check_proxy.check(proxy, exp_ip)
             if not proxy_status:
                 print(profile_id + " | Не пройдена проверка прокси")
             else:
@@ -78,6 +81,16 @@ class WorkerThread(threading.Thread):
             self.api_client.play_game(profile_id, auth_data, proxy)
         if self.task_type == 'daily':
             self.api_client.daily(profile_id, auth_data, proxy)
+        if self.task_type == 'farming':
+            self.api_client.farming(profile_id, auth_data, proxy)
+        if self.task_type == 'friend':
+            self.api_client.friend_claim(profile_id, auth_data, proxy)
+        if self.task_type == 'all':
+            self.api_client.farming(profile_id, auth_data, proxy)
+            self.api_client.friend_claim(profile_id, auth_data, proxy)
+            self.api_client.daily(profile_id, auth_data, proxy)
+            self.api_client.play_game(profile_id, auth_data, proxy)
+
 
 
 class ThreadManager:
@@ -144,7 +157,7 @@ class APIClient:
         )
         response.raise_for_status()
         game_id = response.json()['gameId']
-        print(f'{profile_id} | Стартую игру {game_id}')
+        print(f'{profile_id}-game | Стартую игру {game_id}')
         return game_id
 
     def game_claim(self, token, proxy, game_id):
@@ -155,7 +168,7 @@ class APIClient:
         token = auth_requests.get_token(profile_id, auth_data, proxy)
         available_count = self.get_balance(token=token, proxy=proxy)['playPasses']
         if available_count == 0:
-            print(f'{profile_id} | Нет повторов')
+            print(f'{profile_id}-game | Нет кристаллов')
         else:
 
             for _ in range(available_count):
@@ -163,7 +176,7 @@ class APIClient:
                 time.sleep(random.randint(30, 33))
                 game_result = self.game_claim(token=token, proxy=proxy, game_id=game_id)
                 current_balance = self.get_balance(token=token, proxy=proxy)['availableBalance']
-                print(profile_id + " | "+game_id + ' ' + game_result + ' | Баланс: ' + current_balance)
+                print(profile_id + " | " + game_id + ' ' + game_result + ' | Баланс: ' + current_balance)
 
     def daily(self, profile_id, auth_data, proxy=None):
         token = auth_requests.get_token(profile_id, auth_data, proxy)
@@ -171,9 +184,25 @@ class APIClient:
         response_post = ClaimRewards.claim_rewards_post(token, proxy)
         available_count = self.get_balance(token=token, proxy=proxy)['playPasses']
         if available_count == 0:
-            print(f'{profile_id} | Нет повторов')
+            print(f'{profile_id}-claim daily | Нет кристаллов')
         else:
-            print(f'{profile_id} | Имеется {available_count} повторов')
+            print(f'{profile_id}-claim daily | Имеется {available_count} повторов')
+
+    def farming(self, profile_id, auth_data, proxy=None):
+        token = auth_requests.get_token(profile_id, auth_data, proxy)
+        response_claim = farming.claim_farming(token, proxy)
+        print(f'{profile_id}-claim farming | {response_claim.text}')
+        response_start = farming.start_farming(token, proxy)
+        start_data = response_start.json()
+        claim_pause = (start_data["endTime"]/1000 - int(datetime.now().timestamp()))/60
+        print(f'{profile_id}-start farming| {response_start.text} | Клейм через {claim_pause} минут')
+
+
+    def friend_claim(self, profile_id, auth_data, proxy=None):
+        token = auth_requests.get_token(profile_id, auth_data, proxy)
+        response_claim = friend_claim.claim_friend(token, proxy)
+        print(f'{profile_id}-claim friend | {response_claim.text}')
+
 
 
 def main():

@@ -23,7 +23,6 @@ def claim_rewards_get(token, proxy):
     }
 
     response = requests.request("GET", url, headers=headers, data=payload, proxies=proxy)
-    print(response.text)
     return response.text
 
 
@@ -49,7 +48,5 @@ def claim_rewards_post(token, proxy):
     }
 
     response = requests.request("POST", url, headers=headers, data=payload, proxies=proxy)
-
-    print(response.text)
     return response.text
 
