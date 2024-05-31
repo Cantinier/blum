@@ -8,13 +8,20 @@ import random
 import requests
 import logging
 
+import check_proxy
+import game_claim
+
 import auth_requests
+import ClaimRewards
+
+from enum import Enum
 
 
 def read_csv():
     with open("accounts.csv", 'r') as file:
         reader = csv.DictReader(file, delimiter=';')
         return list(reader)
+
 
 class TaskQueue:
     def __init__(self):
@@ -35,6 +42,7 @@ class WorkerThread(threading.Thread):
         threading.Thread.__init__(self)
         self.task_queue = task_queue
         self.api_client = api_client
+        self.task_type = 'game'
 
     def run(self):
         while True:
@@ -50,8 +58,26 @@ class WorkerThread(threading.Thread):
     def process_task(self, task):
         profile_id = task['profile_id']
         auth_data = task['auth_data']
-        proxy = task['proxy']
-        self.api_client.play_game(profile_id, auth_data, proxy)
+        proxy_data = task['proxy']
+        exp_ip = task['proxy_ip']
+        if proxy_data != '':
+            proxy = {
+                "http": f'http://{proxy_data}',
+                "https": f'http://{proxy_data}'
+            }
+            proxy_status = check_proxy.check(proxy,exp_ip)
+            if not proxy_status:
+                print(profile_id + " | Не пройдена проверка прокси")
+            else:
+                self.start_task(profile_id, auth_data, proxy)
+        else:
+            self.start_task(profile_id, auth_data, None)
+
+    def start_task(self, profile_id, auth_data, proxy):
+        if self.task_type == 'game':
+            self.api_client.play_game(profile_id, auth_data, proxy)
+        if self.task_type == 'daily':
+            self.api_client.daily(profile_id, auth_data, proxy)
 
 
 class ThreadManager:
@@ -94,7 +120,7 @@ class APIClient:
                 'sec-fetch-mode': 'cors',
                 'sec-fetch-site': 'same-site',
             },
-            proxies={'http': proxy, 'https': proxy}
+            proxies=proxy
         )
         response.raise_for_status()
         return response.json()
@@ -114,7 +140,7 @@ class APIClient:
                 'sec-fetch-mode': 'cors',
                 'sec-fetch-site': 'same-site',
             },
-            proxies={'http': proxy, 'https': proxy}
+            proxies=proxy
         )
         response.raise_for_status()
         game_id = response.json()['gameId']
@@ -122,33 +148,8 @@ class APIClient:
         return game_id
 
     def game_claim(self, token, proxy, game_id):
-        points = random.randint(200, 300)
-        response = self.session.post(
-            url="https://game-domain.blum.codes/api/v1/game/claim",
-
-            json=json.dumps({
-                "gameId": f'{game_id}',
-                "points": points
-            }),
-            headers={
-                'Accept': 'application/json, text/plain, */*',
-                'Accept-Language': 'ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3',
-                'Accept-Encoding': 'gzip, deflate, br, zstd',
-                'Content-Type': 'application/json',
-                'Authorization': f'Bearer {token}',
-                'Origin': 'https://telegram.blum.codes',
-                'Connection': 'keep-alive',
-                'Referer': 'https://telegram.blum.codes/',
-                'Sec-Fetch-Dest': 'empty',
-                'Sec-Fetch-Mode': 'cors',
-                'Sec-Fetch-Site': 'same-site',
-                'Pragma': 'no-cache',
-                'Cache-Control': 'no-cache',
-                'TE': 'trailers'
-            },
-            proxies={'http': proxy, 'https': proxy}
-        )
-        return response.text
+        response = game_claim.game_claim_points(token, proxy, game_id)
+        return response
 
     def play_game(self, profile_id, auth_data, proxy=None):
         token = auth_requests.get_token(profile_id, auth_data, proxy)
@@ -163,6 +164,16 @@ class APIClient:
                 game_result = self.game_claim(token=token, proxy=proxy, game_id=game_id)
                 current_balance = self.get_balance(token=token, proxy=proxy)['availableBalance']
                 print(profile_id + " | "+game_id + ' ' + game_result + ' | Баланс: ' + current_balance)
+
+    def daily(self, profile_id, auth_data, proxy=None):
+        token = auth_requests.get_token(profile_id, auth_data, proxy)
+        response_get = ClaimRewards.claim_rewards_get(token, proxy)
+        response_post = ClaimRewards.claim_rewards_post(token, proxy)
+        available_count = self.get_balance(token=token, proxy=proxy)['playPasses']
+        if available_count == 0:
+            print(f'{profile_id} | Нет повторов')
+        else:
+            print(f'{profile_id} | Имеется {available_count} повторов')
 
 
 def main():
