@@ -27,7 +27,7 @@ def get_auth(auth_query, proxy=None):
 
 def read_token(profile_id, auth_data, proxy):
     try:
-        with open(f'tokens/token_{profile_id}', 'r', encoding='utf-8') as file:
+        with open(f'tokens\\token_{profile_id}', 'r', encoding='utf-8') as file:
             token = file.read().strip()
             if token:
                 return token
@@ -41,7 +41,7 @@ def refresh_token(profile_id, auth_data, proxy):
     auth = get_auth(auth_data, proxy)
     token = auth.get('token', {}).get('access')
     if token:
-        with open(f'tokens/token_{profile_id}', 'w', encoding='utf-8') as file:
+        with open(f'tokens\\token_{profile_id}', 'w', encoding='utf-8') as file:
             file.write(token)
     return token
 
