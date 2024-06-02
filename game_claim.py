@@ -3,7 +3,7 @@ import requests
 
 
 def game_claim_points(token, proxy, game_id):
-    points = random.randint(180, 250)
+    points = random.randint(150, 190)
 
     url = "https://game-domain.blum.codes/api/v1/game/claim"
     payloads = {

@@ -178,7 +178,7 @@ class APIClient:
                 balance = self.get_balance(token=token, proxy=proxy)
                 current_balance = balance['availableBalance']
                 playPasses = balance['playPasses']
-                print(profile_id + " | " + game_id + ' ' + game_result + ' | Баланс: ' + current_balance + " | Осталось игр: "+playPasses)
+                print(profile_id + " | " + game_id + ' ' + game_result + ' | Баланс: ' + str(current_balance) + " | Осталось игр: "+str(playPasses))
 
     def daily(self, profile_id, auth_data, proxy=None):
         token = auth_requests.get_token(profile_id, auth_data, proxy)
