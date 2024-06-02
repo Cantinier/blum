@@ -175,8 +175,10 @@ class APIClient:
                 game_id = self.play(profile_id, token, proxy)
                 time.sleep(random.randint(30, 33))
                 game_result = self.game_claim(token=token, proxy=proxy, game_id=game_id)
-                current_balance = self.get_balance(token=token, proxy=proxy)['availableBalance']
-                print(profile_id + " | " + game_id + ' ' + game_result + ' | Баланс: ' + current_balance)
+                balance = self.get_balance(token=token, proxy=proxy)
+                current_balance = balance['availableBalance']
+                playPasses = balance['playPasses']
+                print(profile_id + " | " + game_id + ' ' + game_result + ' | Баланс: ' + current_balance + " | Осталось игр: "+playPasses)
 
     def daily(self, profile_id, auth_data, proxy=None):
         token = auth_requests.get_token(profile_id, auth_data, proxy)
