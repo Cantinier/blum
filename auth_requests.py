@@ -1,12 +1,10 @@
 import requests
 import json
-from requests.exceptions import RequestException
-
 
 auth_query = ""
 
 
-def get_auth(auth_query, proxy=None, retries=3):
+def get_auth(auth_query, proxy=None):
     url = "https://gateway.blum.codes/v1/auth/provider/PROVIDER_TELEGRAM_MINI_APP"
 
     payload = json.dumps({"query": auth_query})
@@ -23,14 +21,8 @@ def get_auth(auth_query, proxy=None, retries=3):
         'sec-fetch-mode': 'cors',
         'sec-fetch-site': 'same-site',
     }
-    for attempt in range(retries):
-        try:
-            response = requests.request("POST", url, headers=headers, data=payload, proxies=proxy)
-            response.raise_for_status()
-            return response.json()
-        except RequestException:
-            if attempt == retries - 1:
-                return f"Failed after {retries} retries."
+    response = requests.post(url, headers=headers, data=payload, proxies=proxy)
+    return response.json()
 
 
 def read_token(profile_id, auth_data, proxy):
@@ -54,7 +46,7 @@ def refresh_token(profile_id, auth_data, proxy):
     return token
 
 
-def check_token(token, proxy, retries=3):
+def check_token(token, proxy):
     url = "https://game-domain.blum.codes/api/v1/user/balance"
     headers = {
         'accept': 'application/json, text/plain, */*',
@@ -68,14 +60,8 @@ def check_token(token, proxy, retries=3):
         'sec-fetch-mode': 'cors',
         'sec-fetch-site': 'same-site',
     }
-    for attempt in range(retries):
-        try:
-            response = requests.get(url, headers=headers, proxies=proxy)
-            response.raise_for_status()
-            return response
-        except RequestException:
-            if attempt == retries - 1:
-                return f"Failed after {retries} retries."
+    response = requests.get(url, headers=headers, proxies=proxy)
+    return response
 
 
 def get_token(profile_id, auth_data, proxy=None):
@@ -84,5 +70,4 @@ def get_token(profile_id, auth_data, proxy=None):
     if response.status_code == 401:
         token = refresh_token(profile_id, auth_data, proxy)
     return token
-
 
