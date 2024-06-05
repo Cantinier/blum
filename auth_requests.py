@@ -1,10 +1,12 @@
 import requests
 import json
+from requests.exceptions import RequestException
+
 
 auth_query = ""
 
 
-def get_auth(auth_query, proxy=None):
+def get_auth(auth_query, proxy=None, retries=3):
     url = "https://gateway.blum.codes/v1/auth/provider/PROVIDER_TELEGRAM_MINI_APP"
 
     payload = json.dumps({"query": auth_query})
@@ -21,8 +23,14 @@ def get_auth(auth_query, proxy=None):
         'sec-fetch-mode': 'cors',
         'sec-fetch-site': 'same-site',
     }
-    response = requests.post(url, headers=headers, data=payload, proxies=proxy)
-    return response.json()
+    for attempt in range(retries):
+        try:
+            response = requests.request("POST", url, headers=headers, data=payload, proxies=proxy)
+            response.raise_for_status()
+            return response.json()
+        except RequestException:
+            if attempt == retries - 1:
+                return f"Failed after {retries} retries."
 
 
 def read_token(profile_id, auth_data, proxy):
@@ -46,7 +54,7 @@ def refresh_token(profile_id, auth_data, proxy):
     return token
 
 
-def check_token(token, proxy):
+def check_token(token, proxy, retries=3):
     url = "https://game-domain.blum.codes/api/v1/user/balance"
     headers = {
         'accept': 'application/json, text/plain, */*',
@@ -60,8 +68,14 @@ def check_token(token, proxy):
         'sec-fetch-mode': 'cors',
         'sec-fetch-site': 'same-site',
     }
-    response = requests.get(url, headers=headers, proxies=proxy)
-    return response
+    for attempt in range(retries):
+        try:
+            response = requests.get(url, headers=headers, proxies=proxy)
+            response.raise_for_status()
+            return response
+        except RequestException:
+            if attempt == retries - 1:
+                return f"Failed after {retries} retries."
 
 
 def get_token(profile_id, auth_data, proxy=None):

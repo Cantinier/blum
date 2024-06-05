@@ -16,6 +16,7 @@ import game_claim
 import auth_requests
 import ClaimRewards
 import farming
+from tenacity import retry, stop_after_attempt, wait_fixed
 
 from enum import Enum
 
@@ -118,6 +119,7 @@ class APIClient:
     def __init__(self):
         self.session = requests.Session()
 
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
     def get_balance(self, token, proxy):
         response = self.session.get(
             f"https://game-domain.blum.codes/api/v1/user/balance",
@@ -138,6 +140,7 @@ class APIClient:
         response.raise_for_status()
         return response.json()
 
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
     def play(self, profile_id, token, proxy):
         response = self.session.post(
             f"https://game-domain.blum.codes/api/v1/game/play",
