@@ -12,6 +12,7 @@ import logging
 import check_proxy
 import friend_claim
 import game_claim
+import task_claim
 
 import auth_requests
 import ClaimRewards
@@ -86,12 +87,13 @@ class WorkerThread(threading.Thread):
             self.api_client.farming(profile_id, auth_data, proxy)
         if self.task_type == 'friend':
             self.api_client.friend_claim(profile_id, auth_data, proxy)
+        if self.task_type == 'task_without_validate':
+            self.api_client.task_without_validate_claim(profile_id, auth_data, proxy)
         if self.task_type == 'all':
             self.api_client.farming(profile_id, auth_data, proxy)
             self.api_client.friend_claim(profile_id, auth_data, proxy)
             self.api_client.daily(profile_id, auth_data, proxy)
             self.api_client.play_game(profile_id, auth_data, proxy)
-
 
 
 class ThreadManager:
@@ -202,12 +204,16 @@ class APIClient:
         claim_pause = (start_data["endTime"]/1000 - int(datetime.now().timestamp()))/60
         print(f'{profile_id}-start farming| {response_start.text} | Клейм через {claim_pause} минут')
 
-
     def friend_claim(self, profile_id, auth_data, proxy=None):
         token = auth_requests.get_token(profile_id, auth_data, proxy)
         response_claim = friend_claim.claim_friend(token, proxy)
         print(f'{profile_id}-claim friend | {response_claim.text}')
 
+    def tasks_without_validate_claim(self, profile_id, auth_data, proxy=None):
+        print(f'Стартуем профиль {profile_id}')
+        token = auth_requests.get_token(profile_id, auth_data, proxy)
+        task_claim.task_without_validate(token, proxy)
+        print(f'{profile_id}-task_claim | миссии выполнены!')
 
 
 def main():
