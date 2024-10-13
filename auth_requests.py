@@ -5,7 +5,7 @@ auth_query = ""
 
 
 def get_auth(auth_query, proxy=None):
-    url = "https://gateway.blum.codes/v1/auth/provider/PROVIDER_TELEGRAM_MINI_APP"
+    url = "https://user-domain.blum.codes/api/v1/auth/provider/PROVIDER_TELEGRAM_MINI_APP"
 
     payload = json.dumps({"query": auth_query})
     headers = {
