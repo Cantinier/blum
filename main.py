@@ -11,6 +11,7 @@ import logging
 
 import check_proxy
 import friend_claim
+import game_check_dogs
 import game_claim
 
 import auth_requests
@@ -143,7 +144,7 @@ class APIClient:
     @retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
     def play(self, profile_id, token, proxy):
         response = self.session.post(
-            f"https://game-domain.blum.codes/api/v1/game/play",
+            f"https://game-domain.blum.codes/api/v2/game/play",
             headers={
                 'accept': 'application/json, text/plain, */*',
                 'accept-language': 'ru,en;q=0.9,en-GB;q=0.8,en-US;q=0.7',
@@ -162,10 +163,19 @@ class APIClient:
         game_id = response.json()['gameId']
         print(f'{profile_id}-game | Стартую игру {game_id}')
         return game_id
+    #
+    # def game_claim(self, token, proxy, game_id):
+    #     response = game_claim.game_claim_points(token, proxy, game_id)
+    #     return response
 
     def game_claim(self, token, proxy, game_id):
-        response = game_claim.game_claim_points(token, proxy, game_id)
-        return response
+        dogs_elig = game_check_dogs.check_dogs(token, proxy)
+
+        if dogs_elig:
+            dogs = random.randint(25, 30) * 5
+            msg, points = game_claim.game_claim_points(token=token, proxy=proxy, game_id=game_id, dogs=dogs)
+        else:
+            msg, points = game_claim.game_claim_points(token=token, proxy=proxy, game_id=game_id, dogs=0)
 
     def play_game(self, profile_id, auth_data, proxy=None):
         token = auth_requests.get_token(profile_id, auth_data, proxy)
@@ -181,7 +191,7 @@ class APIClient:
                 balance = self.get_balance(token=token, proxy=proxy)
                 current_balance = balance['availableBalance']
                 playPasses = balance['playPasses']
-                print(profile_id + " | " + game_id + ' ' + game_result + ' | Баланс: ' + str(current_balance) + " | Осталось игр: "+str(playPasses))
+                print(profile_id + " | " + game_id + ' | Баланс: ' + str(current_balance) + " | Осталось игр: "+str(playPasses))
 
     def daily(self, profile_id, auth_data, proxy=None):
         token = auth_requests.get_token(profile_id, auth_data, proxy)
@@ -198,10 +208,12 @@ class APIClient:
         response_claim = farming.claim_farming(token, proxy)
         print(f'{profile_id}-claim farming | {response_claim.text}')
         response_start = farming.start_farming(token, proxy)
-        start_data = response_start.json()
-        claim_pause = (start_data["endTime"]/1000 - int(datetime.now().timestamp()))/60
-        print(f'{profile_id}-start farming| {response_start.text} | Клейм через {claim_pause} минут')
-
+        try:
+            start_data = response_start.json()
+            claim_pause = (start_data["endTime"]/1000 - int(datetime.now().timestamp()))/60
+            print(f'{profile_id}-start farming| {response_start.text} | Клейм через {claim_pause} минут')
+        except Exception as e:
+            print(f'{profile_id} фарминг уже запущен')
 
     def friend_claim(self, profile_id, auth_data, proxy=None):
         token = auth_requests.get_token(profile_id, auth_data, proxy)

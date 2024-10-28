@@ -2,7 +2,7 @@ import requests
 
 
 def claim_friend(token, proxy):
-    url = "https://gateway.blum.codes/v1/friends/claim"
+    url = "https://gateway.blum.codes/v2/friends/claim"
 
     payload={}
     headers = {

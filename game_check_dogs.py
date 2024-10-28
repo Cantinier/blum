@@ -1,18 +1,10 @@
 import random
 import requests
 
-import payload_generator
 
+def check_dogs(token, proxy):
 
-def game_claim_points(token, proxy, game_id, dogs):
-    points = random.randint(150, 300)
-    data = payload_generator.create_payload(token=token, game_id=game_id, points=points, dogs=dogs, proxy=proxy)
-
-
-    url = "https://game-domain.blum.codes/api/v2/game/claim"
-    payloads = {
-        "payload": f'{data}'
-    }
+    url = "https://game-domain.blum.codes/api/v2/game/eligibility/dogs_drop"
     headers = {
         'Accept': 'application/json, text/plain, */*',
         'Accept-Language': 'ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3',
@@ -29,7 +21,6 @@ def game_claim_points(token, proxy, game_id, dogs):
         'Cache-Control': 'no-cache',
         'TE': 'trailers'
     }
-    response = requests.request("POST", url, headers=headers, json=payloads, proxies=proxy)
-    return response.text
-
+    response = requests.request("GET", url, headers=headers,  proxies=proxy)
+    return response.json()['eligible']
 
