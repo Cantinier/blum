@@ -2,7 +2,7 @@ import requests
 
 
 def start_farming(token, proxy):
-    url = "https://game-domain.blum.codes/api/v2/farming/start"
+    url = "https://game-domain.blum.codes/api/v1/farming/start"
 
     payload={}
     headers = {
@@ -28,7 +28,7 @@ def start_farming(token, proxy):
 
 
 def claim_farming(token, proxy):
-    url = "https://game-domain.blum.codes/api/v2/farming/claim"
+    url = "https://game-domain.blum.codes/api/v1/farming/claim"
 
     payload = {}
     headers = {
