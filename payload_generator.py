@@ -5,15 +5,16 @@ from config import X_API_KEY
 
 
 def create_payload(token, game_id, points, dogs, proxy):
-    url = f'https://blum-pro.vercel.app/api/blum/payload'
+    url = f'http://14.225.212.202/api/blum/payload'
     payloads = {
         "game_id": f'{game_id}',
-        "points": points,
-        "dogs": dogs
+        "points": f'{points}',
+        "dogs": f'{dogs}'
     }
     headers = {
-        'Content-Type': 'application/json',
-        'X-API-KEY': X_API_KEY
+          'accept': 'application/json, text/plain, */*',
+          'content-type': 'application/json',
+          'X-API-KEY': X_API_KEY
 
     }
     response = requests.request("POST", url, headers=headers, json=payloads, proxies=proxy)
